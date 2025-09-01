@@ -10,6 +10,7 @@
 #include <cstring>
 #include <chrono>
 #include <thread>
+#include <cmath>
 
 static int sock_listen_fd = -1;
 
@@ -52,16 +53,24 @@ void test_accept()
                     // 打印接收到的数据
                     //std::cout << "received data, fd = " << fd << ", data = " << buffer << std::endl;
                     
+                    // 【添加模拟计算开销：这里是合适的位置】
+                    // 增加任务耗时，让计算开销远大于调度开销
+                    for (int i = 0; i < 50000; ++i) {
+                        std::sqrt(i * i); // 无意义计算，仅增加耗时
+                    }
+
                     // 构建HTTP响应
-                    const char *response = "HTTP/1.1 200 OK\r\n"
-                                           "Content-Type: text/plain\r\n"
-                                           "Content-Length: 13\r\n"
-                                           "Connection: keep-alive\r\n"
-                                           "\r\n"
-                                           "Hello, World!";
-                    
-                    // 发送HTTP响应
-                    ret = send(fd, response, strlen(response), 0);
+                    for(int j=0;j<10;j++){
+                        const char *response = "HTTP/1.1 200 OK\r\n"
+                                            "Content-Type: text/plain\r\n"
+                                            "Content-Length: 13\r\n"
+                                            "Connection: keep-alive\r\n"
+                                            "\r\n"
+                                            "Hello, World!";
+                        
+                        // 发送HTTP响应
+                        ret = send(fd, response, strlen(response), 0);
+                    }
                    // std::cout << "sent data, fd = " << fd << ", ret = " << ret << std::endl;
 
                     // 关闭连接
