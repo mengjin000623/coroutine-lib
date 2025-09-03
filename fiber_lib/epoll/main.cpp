@@ -93,21 +93,22 @@ int main() {
                 } else {
                     // 【添加模拟计算开销：这里是合适的位置】
                     // 增加任务耗时，让计算开销远大于调度开销
-                    for (int i = 0; i < 50000; ++i) {
-                        // 由于是C语言，需包含<math.h>头文件，使用sqrt函数
-                        sqrt(i * i); 
-                    }
+                    // for (int i = 0; i < 50000; ++i) {
+                    //     // 由于是C语言，需包含<math.h>头文件，使用sqrt函数
+                    //     sqrt(i * i); 
+                    // }
                     // 发送HTTP响应
-                    for(int j=0;j<5;j++){
+                    // for(int j=0;j<5;j++){
                         const char *response = "HTTP/1.1 200 OK\r\n"
                                             "Content-Type: text/plain\r\n"
                                             "Content-Length: 1\r\n"
                                             "Connection: keep-alive\r\n"
                                             "\r\n"
-                                            "1";
+                                            // "1";
+                                            "Hello, World!";
                         write(events[i].data.fd, response, strlen(response));
                         epoll_ctl(epoll_fd,EPOLL_CTL_DEL,events[i].data.fd,NULL);//出现70007的错误再打开，或者试试-r命令
-                    }
+                    // }
                     // 关闭连接
                     close(events[i].data.fd);
                 }
