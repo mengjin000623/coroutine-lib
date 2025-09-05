@@ -37,9 +37,9 @@ namespace sylar//将类封装在sylar命名空间中， 防止命名冲突
 class Semaphore 
 {
 private:
-    std::mutex mtx;                //mtx互斥锁， 保护count变量， 防止并发访问冲突
-    std::condition_variable cv;    //条件变量（ condition_variable） ,用于线程阻塞与唤醒
-    int count;                     //信号计数器， 表示当前可用资源数
+    std::mutex mtx;                //*基础互斥锁， 保护count变量， 防止并发访问冲突
+    std::condition_variable cv;    //*条件变量（ condition_variable） ,用于线程阻塞与唤醒
+    int count;                     //*信号计数器， 表示当前可用资源数
 
 public:
     // 信号量初始化为0
@@ -50,7 +50,7 @@ public:
     // *P 操作（ wait） （ 等待信号， 若 count==0 则阻塞当前线程）
     void wait() 
     {
-        std::unique_lock<std::mutex> lock(mtx);//上锁， 保证对count的访问安全
+        std::unique_lock<std::mutex> lock(mtx);//*将一个需要手动管理的基础互斥锁 std::mutex，包装成一个能自动管理生命周期的、RAII风格的智能互斥锁对象。
         /*
             *使用while检查count：
             *1、 防止虚假唤醒， 当cv.wait()被意外唤醒， 但是count仍然是0， 所以需要再检查一次
@@ -98,7 +98,7 @@ public:
      * 主线程会通过 Semaphore 等待子线程完成初始化。
      */
     Thread(std::function<void()> cb, const std::string& name);
-    // 析构函数： 确保资源释放， 必要时使用 pthread_detach 避免泄露
+    // *析构函数： 确保资源释放， 必要时使用 pthread_detach 避免泄露
     ~Thread();
     // 获取线程系统 ID（ TID）
     pid_t getId() const { return m_id; }
@@ -106,7 +106,6 @@ public:
     const std::string& getName() const { return m_name; }
     // 等待线程结束（ 封装 pthread_join） 用于阻塞当前线程， 直到Thread所表示的线程结束。
     void join();
-
 public:
     /*
      *获取当前线程的系统ID
@@ -119,18 +118,16 @@ public:
      * 返回当前线程绑定的Thread*指针
      * 借助thread_local线程局部变量实现
      * 方便在任何函数中获取当前线程的上下文
+     * 静态成员函数-->提供全局统一接口，thread_local线程私有静态变量，指向的是主线程的Thread类的实例，但是不是实例的内容，所以与Thread类的实例无关，不受实例生存周期的影响
     */
     static Thread* GetThis();
-
     //GetName()， 返回当前线程的名字（ 线程局部变量）
     static const std::string& GetName();
     // 设置当前线程的名字
     static void SetName(const std::string& name);
-
 private:
 	//线程入口函数（ pthread_create使用）
     static void* run(void* arg);
-
 private:
     pid_t m_id = -1;//线程的系统 TID， 通过 GetThreadId() 设置， 在 run() 函数中由子线程自行设置
 
@@ -140,11 +137,9 @@ private:
     // 每个线程都有一个唯一的 pthread_t 句柄， 由操作系统分配， 用于区分线程实体。
     // 通常主线程会通过 m_thread 成员记录所创建的子线程， 便于后续管理和回收。
     pthread_t m_thread = 0;
-
     // 线程需要运行的函数
     std::function<void()> m_cb;//用户传入的回调函数， 线程启动后要执行的具体逻辑
     std::string m_name;//当前线程名， 用于调试/日志追踪等
-    
     //主线程在构造函数中调用 m_semaphore.wait() 阻塞
     //子线程在 run() 函数中完成初始化后调用 m_semaphore.signal() 唤醒主线程
     //作用： 保证构造函数返回前， 线程已准备好（ 设置好了 m_id、 m_name、 绑定到 thread_local）
